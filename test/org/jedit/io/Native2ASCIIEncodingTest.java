@@ -21,6 +21,12 @@
 
 package org.jedit.io;
 
+import static org.gjt.sp.util.IOUtilities.closeQuietly;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.sameInstance;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
@@ -40,17 +46,9 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import static org.gjt.sp.util.IOUtilities.closeQuietly;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.sameInstance;
-
-public class Native2ASCIIEncodingTest
-{
+public class Native2ASCIIEncodingTest {
 	@BeforeClass
-	public static void oneTimeSetUp()
-	{
+	public static void oneTimeSetUp() {
 		native2ASCIIEncoding = new Native2ASCIIEncoding();
 		iso_8859_1 = Charset.forName("ISO-8859-1");
 		bufferArray = new char[1024];
@@ -58,8 +56,7 @@ public class Native2ASCIIEncodingTest
 	}
 
 	@AfterClass
-	public static void oneTimeTearDown()
-	{
+	public static void oneTimeTearDown() {
 		native2ASCIIEncoding = null;
 		iso_8859_1 = null;
 		bufferArray = null;
@@ -67,76 +64,64 @@ public class Native2ASCIIEncodingTest
 	}
 
 	@Before
-	public void setUp()
-	{
+	public void setUp() {
 		buffer.clear();
 	}
 
 	@After
-	public void tearDown()
-	{
-		closeQuietly((Closeable)reader);
-		closeQuietly((Closeable)writer);
+	public void tearDown() {
+		closeQuietly((Closeable) reader);
+		closeQuietly((Closeable) writer);
 	}
 
-	private Reader getReader(String input) throws IOException
-	{
+	private Reader getReader(String input) throws IOException {
 		InputStream inputStream = new ByteArrayInputStream(input.getBytes(iso_8859_1));
 		reader = native2ASCIIEncoding.getTextReader(inputStream);
 		return reader;
 	}
 
-	private Reader getThrottledReader(String input)
-		throws IOException, InvocationTargetException, NoSuchMethodException, IllegalAccessException,
-		       InstantiationException
-	{
+	private Reader getThrottledReader(String input) throws IOException, InvocationTargetException,
+			NoSuchMethodException, IllegalAccessException, InstantiationException {
 		InputStream inputStream = new ByteArrayInputStream(input.getBytes(iso_8859_1));
 		reader = native2ASCIIEncoding.getTextReader(inputStream, ThrottledPushbackReader.class);
 		return reader;
 	}
 
-	private Reader getPermissiveReader(String input) throws IOException
-	{
+	private Reader getPermissiveReader(String input) throws IOException {
 		InputStream inputStream = new ByteArrayInputStream(input.getBytes(iso_8859_1));
 		reader = native2ASCIIEncoding.getPermissiveTextReader(inputStream);
 		return reader;
 	}
 
-	private Reader getThrottledPermissiveReader(String input)
-		throws IOException, InvocationTargetException, NoSuchMethodException, IllegalAccessException,
-		       InstantiationException
-	{
+	private Reader getThrottledPermissiveReader(String input) throws IOException, InvocationTargetException,
+			NoSuchMethodException, IllegalAccessException, InstantiationException {
 		InputStream inputStream = new ByteArrayInputStream(input.getBytes(iso_8859_1));
 		reader = native2ASCIIEncoding.getPermissiveTextReader(inputStream, ThrottledPushbackReader.class);
 		return reader;
 	}
 
 	@Test
-	public void readShouldConvertEscapeSequence() throws IOException
-	{
+	public void readShouldConvertEscapeSequence() throws IOException {
 		int c = getReader("\\u21aF").read();
 		assertThat((char) c, is(equalTo('\u21aF')));
 	}
 
 	@Test
-	public void read_charArray_ShouldConvertEscapeSequence() throws IOException
-	{
+	public void read_charArray_ShouldConvertEscapeSequence() throws IOException {
 		int c = getReader("\\u21aF").read(bufferArray);
 		assertThat(c, is(equalTo(1)));
 		assertThat(bufferArray[0], is(equalTo('\u21aF')));
 	}
 
 	@Test
-	public void read_charArray_int_int_ShouldConvertEscapeSequence() throws IOException
-	{
+	public void read_charArray_int_int_ShouldConvertEscapeSequence() throws IOException {
 		int c = getReader("\\u21aF").read(bufferArray, 0, 1);
 		assertThat(c, is(equalTo(1)));
 		assertThat(bufferArray[0], is(equalTo('\u21aF')));
 	}
 
 	@Test
-	public void read_CharBuffer_ShouldConvertEscapeSequence() throws IOException
-	{
+	public void read_CharBuffer_ShouldConvertEscapeSequence() throws IOException {
 		int c = getReader("\\u21aF").read(buffer);
 		buffer.flip();
 		assertThat(c, is(equalTo(1)));
@@ -145,83 +130,69 @@ public class Native2ASCIIEncodingTest
 	}
 
 	@Test(expected = MalformedInputException.class)
-	public void readShouldThrowExceptionOnIncompleteEscapeSequence() throws IOException
-	{
+	public void readShouldThrowExceptionOnIncompleteEscapeSequence() throws IOException {
 		getReader("\\u21a").read();
 	}
 
 	@Test(expected = MalformedInputException.class)
-	public void read_charArray_ShouldThrowExceptionOnIncompleteEscapeSequence() throws IOException
-	{
+	public void read_charArray_ShouldThrowExceptionOnIncompleteEscapeSequence() throws IOException {
 		getReader("\\u21a").read(bufferArray);
 	}
 
 	@Test(expected = MalformedInputException.class)
-	public void read_charArray_int_int_ShouldThrowExceptionOnIncompleteEscapeSequence() throws IOException
-	{
+	public void read_charArray_int_int_ShouldThrowExceptionOnIncompleteEscapeSequence() throws IOException {
 		getReader("\\u21a").read(bufferArray, 0, 1);
 	}
 
 	@Test(expected = MalformedInputException.class)
-	public void read_CharBuffer_ShouldThrowExceptionOnIncompleteEscapeSequence() throws IOException
-	{
+	public void read_CharBuffer_ShouldThrowExceptionOnIncompleteEscapeSequence() throws IOException {
 		getReader("\\u21a").read(buffer);
 	}
 
 	@Test(expected = MalformedInputException.class)
-	public void readShouldThrowExceptionOnMissingInputAfterU() throws IOException
-	{
+	public void readShouldThrowExceptionOnMissingInputAfterU() throws IOException {
 		getReader("\\u").read();
 	}
 
 	@Test(expected = MalformedInputException.class)
-	public void read_charArray_ShouldThrowExceptionOnMissingInputAfterU() throws IOException
-	{
+	public void read_charArray_ShouldThrowExceptionOnMissingInputAfterU() throws IOException {
 		getReader("\\u").read(bufferArray);
 	}
 
 	@Test(expected = MalformedInputException.class)
-	public void read_charArray_int_int_ShouldThrowExceptionOnMissingInputAfterU() throws IOException
-	{
+	public void read_charArray_int_int_ShouldThrowExceptionOnMissingInputAfterU() throws IOException {
 		getReader("\\u").read(bufferArray, 0, 1);
 	}
 
 	@Test(expected = MalformedInputException.class)
-	public void read_CharBuffer_ShouldThrowExceptionOnMissingInputAfterU() throws IOException
-	{
+	public void read_CharBuffer_ShouldThrowExceptionOnMissingInputAfterU() throws IOException {
 		getReader("\\u").read(buffer);
 	}
 
 	@Test(expected = MalformedInputException.class)
-	public void readShouldThrowExceptionOnMalformedInput() throws IOException
-	{
+	public void readShouldThrowExceptionOnMalformedInput() throws IOException {
 		Reader reader = getReader("asdf\\: \\u21alasdf");
-		while (reader.read() != -1)
-		{
+		while (reader.read() != -1) {
 		}
 	}
 
 	@Test(expected = MalformedInputException.class)
-	public void read_charArray_ShouldThrowExceptionOnMalformedInput() throws IOException
-	{
+	public void read_charArray_ShouldThrowExceptionOnMalformedInput() throws IOException {
 		getReader("asdf\\: \\u21alasdf").read(bufferArray);
 	}
 
 	@Test(expected = MalformedInputException.class)
-	public void read_charArray_int_int_ShouldThrowExceptionOnMalformedInput() throws IOException
-	{
+	public void read_charArray_int_int_ShouldThrowExceptionOnMalformedInput() throws IOException {
 		getReader("asdf\\: \\u21alasdf").read(bufferArray, 0, 15);
 	}
 
 	@Test(expected = MalformedInputException.class)
-	public void read_CharBuffer_ShouldThrowExceptionOnMalformedInput() throws IOException
-	{
+	public void read_CharBuffer_ShouldThrowExceptionOnMalformedInput() throws IOException {
 		getReader("asdf\\: \\u21alasdf").read(buffer);
 	}
 
 	@Test
-	public void permissiveReadShouldAcceptIncompleteEscapeSequence() throws IOException
-	{
+	public void permissiveReadShouldAcceptIncompleteEscapeSequence() throws IOException {
 		Reader reader = getPermissiveReader("\\u21a");
 		int c = reader.read();
 		assertThat((char) c, is(equalTo('\\')));
@@ -238,8 +209,7 @@ public class Native2ASCIIEncodingTest
 	}
 
 	@Test
-	public void permissiveRead_charArray_ShouldAcceptIncompleteEscapeSequence() throws IOException
-	{
+	public void permissiveRead_charArray_ShouldAcceptIncompleteEscapeSequence() throws IOException {
 		Reader reader = getPermissiveReader("\\u21a");
 		int c = reader.read(bufferArray);
 		assertThat(c, is(equalTo(5)));
@@ -252,8 +222,7 @@ public class Native2ASCIIEncodingTest
 	}
 
 	@Test
-	public void permissiveRead_charArray_int_int_ShouldAcceptIncompleteEscapeSequence() throws IOException
-	{
+	public void permissiveRead_charArray_int_int_ShouldAcceptIncompleteEscapeSequence() throws IOException {
 		Reader reader = getPermissiveReader("\\u21a");
 		int c = reader.read(bufferArray, 0, 5);
 		assertThat(c, is(equalTo(5)));
@@ -266,8 +235,7 @@ public class Native2ASCIIEncodingTest
 	}
 
 	@Test
-	public void permissiveRead_CharBuffer_ShouldAcceptIncompleteEscapeSequence() throws IOException
-	{
+	public void permissiveRead_CharBuffer_ShouldAcceptIncompleteEscapeSequence() throws IOException {
 		String input = "\\u21a";
 		Reader reader = getPermissiveReader(input);
 		int c = reader.read(buffer);
@@ -278,8 +246,7 @@ public class Native2ASCIIEncodingTest
 	}
 
 	@Test
-	public void permissiveReadShouldAcceptMissingInputAfterU() throws IOException
-	{
+	public void permissiveReadShouldAcceptMissingInputAfterU() throws IOException {
 		Reader reader = getPermissiveReader("\\u");
 		int c = reader.read();
 		assertThat((char) c, is(equalTo('\\')));
@@ -290,8 +257,7 @@ public class Native2ASCIIEncodingTest
 	}
 
 	@Test
-	public void permissiveRead_charArray_ShouldAcceptMissingInputAfterU() throws IOException
-	{
+	public void permissiveRead_charArray_ShouldAcceptMissingInputAfterU() throws IOException {
 		Reader reader = getPermissiveReader("\\u");
 		int c = reader.read(bufferArray);
 		assertThat(c, is(equalTo(2)));
@@ -301,8 +267,7 @@ public class Native2ASCIIEncodingTest
 	}
 
 	@Test
-	public void permissiveRead_charArray_int_int_ShouldAcceptMissingInputAfterU() throws IOException
-	{
+	public void permissiveRead_charArray_int_int_ShouldAcceptMissingInputAfterU() throws IOException {
 		Reader reader = getPermissiveReader("\\u");
 		int c = reader.read(bufferArray, 0, 2);
 		assertThat(c, is(equalTo(2)));
@@ -312,8 +277,7 @@ public class Native2ASCIIEncodingTest
 	}
 
 	@Test
-	public void permissiveRead_CharBuffer_ShouldAcceptMissingInputAfterU() throws IOException
-	{
+	public void permissiveRead_CharBuffer_ShouldAcceptMissingInputAfterU() throws IOException {
 		String input = "\\u";
 		Reader reader = getPermissiveReader(input);
 		int c = reader.read(buffer);
@@ -324,8 +288,7 @@ public class Native2ASCIIEncodingTest
 	}
 
 	@Test
-	public void permissiveReadShouldAcceptMalformedInput() throws IOException
-	{
+	public void permissiveReadShouldAcceptMalformedInput() throws IOException {
 		Reader reader = getPermissiveReader("asdf\\: \\u21a/asdf");
 		int c = reader.read();
 		assertThat((char) c, is(equalTo('a')));
@@ -366,8 +329,7 @@ public class Native2ASCIIEncodingTest
 	}
 
 	@Test
-	public void permissiveRead_charArray_ShouldAcceptMalformedInput() throws IOException
-	{
+	public void permissiveRead_charArray_ShouldAcceptMalformedInput() throws IOException {
 		int c = getPermissiveReader("asdf\\: \\u21a/asdf").read(bufferArray);
 		assertThat(c, is(equalTo(17)));
 		int i = 0;
@@ -391,8 +353,7 @@ public class Native2ASCIIEncodingTest
 	}
 
 	@Test
-	public void permissiveRead_charArray_int_int_ShouldAcceptMalformedInput() throws IOException
-	{
+	public void permissiveRead_charArray_int_int_ShouldAcceptMalformedInput() throws IOException {
 		int c = getPermissiveReader("asdf\\: \\u21a/asdf").read(bufferArray, 0, 17);
 		assertThat(c, is(equalTo(17)));
 		int i = 0;
@@ -416,8 +377,7 @@ public class Native2ASCIIEncodingTest
 	}
 
 	@Test
-	public void permissiveRead_CharBuffer_ShouldAcceptMalformedInput() throws IOException
-	{
+	public void permissiveRead_CharBuffer_ShouldAcceptMalformedInput() throws IOException {
 		String input = "asdf\\: \\u21a/asdf";
 		Reader reader = getPermissiveReader(input);
 		int c = reader.read(buffer);
@@ -428,29 +388,25 @@ public class Native2ASCIIEncodingTest
 	}
 
 	@Test
-	public void readShouldCorrectlyHandleEOF() throws IOException
-	{
+	public void readShouldCorrectlyHandleEOF() throws IOException {
 		int c = getReader("").read();
 		assertThat(c, is(equalTo(-1)));
 	}
 
 	@Test
-	public void read_charArray_ShouldCorrectlyHandleEOF() throws IOException
-	{
+	public void read_charArray_ShouldCorrectlyHandleEOF() throws IOException {
 		int c = getReader("").read(bufferArray);
 		assertThat(c, is(equalTo(-1)));
 	}
 
 	@Test
-	public void read_charArray_int_int_ShouldCorrectlyHandleEOF() throws IOException
-	{
+	public void read_charArray_int_int_ShouldCorrectlyHandleEOF() throws IOException {
 		int c = getReader("").read(bufferArray, 0, 1);
 		assertThat(c, is(equalTo(-1)));
 	}
 
 	@Test
-	public void read_CharBuffer_ShouldCorrectlyHandleEOF() throws IOException
-	{
+	public void read_CharBuffer_ShouldCorrectlyHandleEOF() throws IOException {
 		int c = getReader("").read(buffer);
 		buffer.flip();
 		assertThat(c, is(equalTo(-1)));
@@ -458,8 +414,7 @@ public class Native2ASCIIEncodingTest
 	}
 
 	@Test
-	public void readShouldCorrectlyHandleEOFAfterBackslash() throws IOException
-	{
+	public void readShouldCorrectlyHandleEOFAfterBackslash() throws IOException {
 		Reader reader = getReader("\\");
 		int c = reader.read();
 		assertThat((char) c, is(equalTo('\\')));
@@ -468,24 +423,21 @@ public class Native2ASCIIEncodingTest
 	}
 
 	@Test
-	public void read_charArray_ShouldCorrectlyHandleEOFAfterBackslash() throws IOException
-	{
+	public void read_charArray_ShouldCorrectlyHandleEOFAfterBackslash() throws IOException {
 		int c = getReader("\\").read(bufferArray);
 		assertThat(c, is(equalTo(1)));
 		assertThat(bufferArray[0], is(equalTo('\\')));
 	}
 
 	@Test
-	public void read_charArray_int_int_ShouldCorrectlyHandleEOFAfterBackslash() throws IOException
-	{
+	public void read_charArray_int_int_ShouldCorrectlyHandleEOFAfterBackslash() throws IOException {
 		int c = getReader("\\").read(bufferArray, 0, 1);
 		assertThat(c, is(equalTo(1)));
 		assertThat(bufferArray[0], is(equalTo('\\')));
 	}
 
 	@Test
-	public void read_CharBuffer_ShouldCorrectlyHandleEOFAfterBackslash() throws IOException
-	{
+	public void read_CharBuffer_ShouldCorrectlyHandleEOFAfterBackslash() throws IOException {
 		String input = "\\";
 		int c = getReader(input).read(buffer);
 		buffer.flip();
@@ -495,8 +447,7 @@ public class Native2ASCIIEncodingTest
 	}
 
 	@Test
-	public void readShouldCorrectlyHandleLessThan5NonEscapeCharactersAfterBackslash() throws IOException
-	{
+	public void readShouldCorrectlyHandleLessThan5NonEscapeCharactersAfterBackslash() throws IOException {
 		Reader reader = getReader("\\asdf");
 		int c = reader.read();
 		assertThat((char) c, is(equalTo('\\')));
@@ -513,8 +464,7 @@ public class Native2ASCIIEncodingTest
 	}
 
 	@Test
-	public void read_charArray_ShouldCorrectlyHandleLessThan5NonEscapeCharactersAfterBackslash() throws IOException
-	{
+	public void read_charArray_ShouldCorrectlyHandleLessThan5NonEscapeCharactersAfterBackslash() throws IOException {
 		int c = getReader("\\asdf").read(bufferArray);
 		assertThat(c, is(equalTo(5)));
 		int i = 0;
@@ -527,8 +477,7 @@ public class Native2ASCIIEncodingTest
 
 	@Test
 	public void read_charArray_int_int_ShouldCorrectlyHandleLessThan5NonEscapeCharactersAfterBackslash()
-		throws IOException
-	{
+			throws IOException {
 		int c = getReader("\\asdf").read(bufferArray, 0, 5);
 		assertThat(c, is(equalTo(5)));
 		int i = 0;
@@ -540,8 +489,7 @@ public class Native2ASCIIEncodingTest
 	}
 
 	@Test
-	public void read_CharBuffer_ShouldCorrectlyHandleLessThan5NonEscapeCharactersAfterBackslash() throws IOException
-	{
+	public void read_CharBuffer_ShouldCorrectlyHandleLessThan5NonEscapeCharactersAfterBackslash() throws IOException {
 		String input = "\\asdf";
 		int c = getReader(input).read(buffer);
 		buffer.flip();
@@ -551,71 +499,55 @@ public class Native2ASCIIEncodingTest
 	}
 
 	@Test(expected = MalformedInputException.class)
-	public void readShouldThrowExceptionOnMalformedInputWithThrottledReader()
-		throws IOException, InvocationTargetException, NoSuchMethodException, InstantiationException,
-		       IllegalAccessException
-	{
+	public void readShouldThrowExceptionOnMalformedInputWithThrottledReader() throws IOException,
+			InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException {
 		getThrottledReader("\\u21aL").read();
 	}
 
 	@Test(expected = MalformedInputException.class)
-	public void read_charArray_ShouldThrowExceptionOnMalformedInputWithThrottledReader()
-		throws IOException, InvocationTargetException, NoSuchMethodException, InstantiationException,
-		       IllegalAccessException
-	{
+	public void read_charArray_ShouldThrowExceptionOnMalformedInputWithThrottledReader() throws IOException,
+			InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException {
 		getThrottledReader("\\u21aL").read(bufferArray);
 	}
 
 	@Test(expected = MalformedInputException.class)
-	public void read_charArray_int_int_ShouldThrowExceptionOnMalformedInputWithThrottledReader()
-		throws IOException, InvocationTargetException, NoSuchMethodException, InstantiationException,
-		       IllegalAccessException
-	{
+	public void read_charArray_int_int_ShouldThrowExceptionOnMalformedInputWithThrottledReader() throws IOException,
+			InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException {
 		getThrottledReader("\\u21aL").read(bufferArray, 0, 1);
 	}
 
 	@Test(expected = MalformedInputException.class)
-	public void read_CharBuffer_ShouldThrowExceptionOnMalformedInputWithThrottledReader()
-		throws IOException, InvocationTargetException, NoSuchMethodException, InstantiationException,
-		       IllegalAccessException
-	{
+	public void read_CharBuffer_ShouldThrowExceptionOnMalformedInputWithThrottledReader() throws IOException,
+			InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException {
 		getThrottledReader("\\u21aL").read(buffer);
 	}
 
 	@Test
-	public void readShouldConvertEscapeSequenceWithThrottledInputStream()
-		throws IOException, InvocationTargetException, NoSuchMethodException, InstantiationException,
-		       IllegalAccessException
-	{
+	public void readShouldConvertEscapeSequenceWithThrottledInputStream() throws IOException, InvocationTargetException,
+			NoSuchMethodException, InstantiationException, IllegalAccessException {
 		int c = getThrottledReader("\\u21aF").read();
 		assertThat((char) c, is(equalTo('\u21aF')));
 	}
 
 	@Test
-	public void read_charArray_ShouldConvertEscapeSequenceWithThrottledInputStream()
-		throws IOException, InvocationTargetException, NoSuchMethodException, InstantiationException,
-		       IllegalAccessException
-	{
+	public void read_charArray_ShouldConvertEscapeSequenceWithThrottledInputStream() throws IOException,
+			InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException {
 		int c = getThrottledReader("\\u21aF").read(bufferArray);
 		assertThat(c, is(equalTo(1)));
 		assertThat(bufferArray[0], is(equalTo('\u21aF')));
 	}
 
 	@Test
-	public void read_charArray_int_int_ShouldConvertEscapeSequenceWithThrottledInputStream()
-		throws IOException, InvocationTargetException, NoSuchMethodException, InstantiationException,
-		       IllegalAccessException
-	{
+	public void read_charArray_int_int_ShouldConvertEscapeSequenceWithThrottledInputStream() throws IOException,
+			InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException {
 		int c = getThrottledReader("\\u21aF").read(bufferArray, 0, 1);
 		assertThat(c, is(equalTo(1)));
 		assertThat(bufferArray[0], is(equalTo('\u21aF')));
 	}
 
 	@Test
-	public void read_CharBuffer_ShouldConvertEscapeSequenceWithThrottledInputStream()
-		throws IOException, InvocationTargetException, NoSuchMethodException, InstantiationException,
-		       IllegalAccessException
-	{
+	public void read_CharBuffer_ShouldConvertEscapeSequenceWithThrottledInputStream() throws IOException,
+			InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException {
 		int c = getThrottledReader("\\u21aF").read(buffer);
 		buffer.flip();
 		assertThat(c, is(equalTo(1)));
@@ -623,8 +555,7 @@ public class Native2ASCIIEncodingTest
 	}
 
 	@Test
-	public void readShouldReadBackslashWithoutFollowingUAsBackslash() throws IOException
-	{
+	public void readShouldReadBackslashWithoutFollowingUAsBackslash() throws IOException {
 		Reader reader = getReader("\\nu21aF");
 		int c = reader.read();
 		assertThat((char) c, is(equalTo('\\')));
@@ -645,8 +576,7 @@ public class Native2ASCIIEncodingTest
 	}
 
 	@Test
-	public void read_charArray_ShouldReadBackslashWithoutFollowingUAsBackslash() throws IOException
-	{
+	public void read_charArray_ShouldReadBackslashWithoutFollowingUAsBackslash() throws IOException {
 		int c = getReader("\\nu21aF").read(bufferArray);
 		assertThat(c, is(equalTo(7)));
 		int i = 0;
@@ -660,8 +590,7 @@ public class Native2ASCIIEncodingTest
 	}
 
 	@Test
-	public void read_charArray_int_int_ShouldReadBackslashWithoutFollowingUAsBackslash() throws IOException
-	{
+	public void read_charArray_int_int_ShouldReadBackslashWithoutFollowingUAsBackslash() throws IOException {
 		int c = getReader("\\nu21aF").read(bufferArray, 0, 7);
 		assertThat(c, is(equalTo(7)));
 		int i = 0;
@@ -675,8 +604,7 @@ public class Native2ASCIIEncodingTest
 	}
 
 	@Test
-	public void read_CharBuffer_ShouldReadBackslashWithoutFollowingUAsBackslash() throws IOException
-	{
+	public void read_CharBuffer_ShouldReadBackslashWithoutFollowingUAsBackslash() throws IOException {
 		String input = "\\nu21aF";
 		Reader reader = getReader(input);
 		int c = reader.read(buffer);
@@ -687,10 +615,8 @@ public class Native2ASCIIEncodingTest
 	}
 
 	@Test
-	public void permissiveReadShouldAcceptMalformedInputWithThrottledReader()
-		throws IOException, InvocationTargetException, NoSuchMethodException, InstantiationException,
-		       IllegalAccessException
-	{
+	public void permissiveReadShouldAcceptMalformedInputWithThrottledReader() throws IOException,
+			InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException {
 		Reader reader = getThrottledPermissiveReader("\\u21a;");
 		int c = reader.read();
 		assertThat((char) c, is(equalTo('\\')));
@@ -709,10 +635,8 @@ public class Native2ASCIIEncodingTest
 	}
 
 	@Test
-	public void permissiveRead_charArray_ShouldAcceptMalformedInputWithThrottledReader()
-		throws IOException, InvocationTargetException, NoSuchMethodException, InstantiationException,
-		       IllegalAccessException
-	{
+	public void permissiveRead_charArray_ShouldAcceptMalformedInputWithThrottledReader() throws IOException,
+			InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException {
 		int c = getThrottledPermissiveReader("\\u21a;").read(bufferArray);
 		assertThat(c, is(equalTo(6)));
 		int i = 0;
@@ -725,10 +649,8 @@ public class Native2ASCIIEncodingTest
 	}
 
 	@Test
-	public void permissiveRead_charArray_int_int_ShouldAcceptMalformedInputWithThrottledReader()
-		throws IOException, InvocationTargetException, NoSuchMethodException, InstantiationException,
-		       IllegalAccessException
-	{
+	public void permissiveRead_charArray_int_int_ShouldAcceptMalformedInputWithThrottledReader() throws IOException,
+			InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException {
 		int c = getThrottledPermissiveReader("\\u21a;").read(bufferArray, 0, 6);
 		assertThat(c, is(equalTo(6)));
 		int i = 0;
@@ -741,10 +663,8 @@ public class Native2ASCIIEncodingTest
 	}
 
 	@Test
-	public void permissiveRead_CharBuffer_ShouldAcceptMalformedInputWithThrottledReader()
-		throws IOException, InvocationTargetException, NoSuchMethodException, InstantiationException,
-		       IllegalAccessException
-	{
+	public void permissiveRead_CharBuffer_ShouldAcceptMalformedInputWithThrottledReader() throws IOException,
+			InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException {
 		String input = "\\u21a;";
 		Reader reader = getThrottledPermissiveReader(input);
 		int c = reader.read(buffer);
@@ -755,8 +675,7 @@ public class Native2ASCIIEncodingTest
 	}
 
 	@Test
-	public void read_charArray_shouldReadOnAfterCollapsingEscapeSequences() throws IOException
-	{
+	public void read_charArray_shouldReadOnAfterCollapsingEscapeSequences() throws IOException {
 		int c = getReader("asdf\\: \\u21aFasdf").read(bufferArray);
 		assertThat(c, is(equalTo(12)));
 		int i = 0;
@@ -775,8 +694,7 @@ public class Native2ASCIIEncodingTest
 	}
 
 	@Test
-	public void read_charArray_int_int_shouldReadOnAfterCollapsingEscapeSequences() throws IOException
-	{
+	public void read_charArray_int_int_shouldReadOnAfterCollapsingEscapeSequences() throws IOException {
 		int c = getReader("asdf\\: \\u21aFasdf").read(bufferArray, 0, 12);
 		assertThat(c, is(equalTo(12)));
 		int i = 0;
@@ -795,8 +713,7 @@ public class Native2ASCIIEncodingTest
 	}
 
 	@Test
-	public void read_CharBuffer_shouldReadOnAfterCollapsingEscapeSequences() throws IOException
-	{
+	public void read_CharBuffer_shouldReadOnAfterCollapsingEscapeSequences() throws IOException {
 		int c = getReader("asdf\\: \\u21aFasdf").read(buffer);
 		buffer.flip();
 		assertThat(c, is(equalTo(12)));
@@ -805,8 +722,7 @@ public class Native2ASCIIEncodingTest
 	}
 
 	@Test
-	public void readShouldIgnoreEscapeSequenceThatFollowsOneBackslash() throws IOException
-	{
+	public void readShouldIgnoreEscapeSequenceThatFollowsOneBackslash() throws IOException {
 		Reader reader = getReader("\\\\u21aF");
 		int c = reader.read();
 		assertThat((char) c, is(equalTo('\\')));
@@ -827,8 +743,7 @@ public class Native2ASCIIEncodingTest
 	}
 
 	@Test
-	public void read_charArray_ShouldIgnoreEscapeSequenceThatFollowsOneBackslash() throws IOException
-	{
+	public void read_charArray_ShouldIgnoreEscapeSequenceThatFollowsOneBackslash() throws IOException {
 		int c = getReader("\\\\u21aF").read(bufferArray);
 		assertThat(c, is(equalTo(7)));
 		int i = 0;
@@ -842,8 +757,7 @@ public class Native2ASCIIEncodingTest
 	}
 
 	@Test
-	public void read_charArray_int_int_ShouldIgnoreEscapeSequenceThatFollowsOneBackslash() throws IOException
-	{
+	public void read_charArray_int_int_ShouldIgnoreEscapeSequenceThatFollowsOneBackslash() throws IOException {
 		int c = getReader("\\\\u21aF").read(bufferArray, 0, 7);
 		assertThat(c, is(equalTo(7)));
 		int i = 0;
@@ -857,8 +771,7 @@ public class Native2ASCIIEncodingTest
 	}
 
 	@Test
-	public void read_CharBuffer_ShouldIgnoreEscapeSequenceThatFollowsOneBackslash() throws IOException
-	{
+	public void read_CharBuffer_ShouldIgnoreEscapeSequenceThatFollowsOneBackslash() throws IOException {
 		String input = "\\\\u21aF";
 		Reader reader = getReader(input);
 		int c = reader.read(buffer);
@@ -869,8 +782,7 @@ public class Native2ASCIIEncodingTest
 	}
 
 	@Test
-	public void readShouldConvertEscapeSequenceThatFollowsTwoBackslashes() throws IOException
-	{
+	public void readShouldConvertEscapeSequenceThatFollowsTwoBackslashes() throws IOException {
 		Reader reader = getReader("\\\\\\u21aF");
 		int c = reader.read();
 		assertThat((char) c, is(equalTo('\\')));
@@ -883,8 +795,7 @@ public class Native2ASCIIEncodingTest
 	}
 
 	@Test
-	public void read_charArray_ShouldConvertEscapeSequenceThatFollowsTwoBackslashes() throws IOException
-	{
+	public void read_charArray_ShouldConvertEscapeSequenceThatFollowsTwoBackslashes() throws IOException {
 		int c = getReader("\\\\\\u21aF").read(bufferArray);
 		assertThat(c, is(equalTo(3)));
 		int i = 0;
@@ -894,8 +805,7 @@ public class Native2ASCIIEncodingTest
 	}
 
 	@Test
-	public void read_charArray_int_int_ShouldConvertEscapeSequenceThatFollowsTwoBackslashes() throws IOException
-	{
+	public void read_charArray_int_int_ShouldConvertEscapeSequenceThatFollowsTwoBackslashes() throws IOException {
 		int c = getReader("\\\\\\u21aF").read(bufferArray, 0, 3);
 		assertThat(c, is(equalTo(3)));
 		int i = 0;
@@ -905,8 +815,7 @@ public class Native2ASCIIEncodingTest
 	}
 
 	@Test
-	public void read_CharBuffer_ShouldConvertEscapeSequenceThatFollowsTwoBackslashes() throws IOException
-	{
+	public void read_CharBuffer_ShouldConvertEscapeSequenceThatFollowsTwoBackslashes() throws IOException {
 		Reader reader = getReader("\\\\\\u21aF");
 		int c = reader.read(buffer);
 		buffer.flip();
@@ -916,8 +825,7 @@ public class Native2ASCIIEncodingTest
 	}
 
 	@Test
-	public void differentReadMethodsShouldBeUsableOnTheSameStream() throws IOException
-	{
+	public void differentReadMethodsShouldBeUsableOnTheSameStream() throws IOException {
 		Reader reader = getReader("asdf\\: \\u21aFasdf");
 		int c = reader.read();
 		assertThat((char) c, is(equalTo('a')));
@@ -948,8 +856,7 @@ public class Native2ASCIIEncodingTest
 	}
 
 	@Test
-	public void readShouldIgnoreEscapeSequenceThatFollowsThreeBackslashes() throws IOException
-	{
+	public void readShouldIgnoreEscapeSequenceThatFollowsThreeBackslashes() throws IOException {
 		Reader reader = getReader("\\\\\\\\u21aF");
 		int c = reader.read();
 		assertThat((char) c, is(equalTo('\\')));
@@ -974,8 +881,7 @@ public class Native2ASCIIEncodingTest
 	}
 
 	@Test
-	public void read_charArray_ShouldIgnoreEscapeSequenceThatFollowsThreeBackslashes() throws IOException
-	{
+	public void read_charArray_ShouldIgnoreEscapeSequenceThatFollowsThreeBackslashes() throws IOException {
 		int c = getReader("\\\\\\\\u21aF").read(bufferArray);
 		assertThat(c, is(equalTo(9)));
 		int i = 0;
@@ -991,8 +897,7 @@ public class Native2ASCIIEncodingTest
 	}
 
 	@Test
-	public void read_charArray_int_int_ShouldIgnoreEscapeSequenceThatFollowsThreeBackslashes() throws IOException
-	{
+	public void read_charArray_int_int_ShouldIgnoreEscapeSequenceThatFollowsThreeBackslashes() throws IOException {
 		int c = getReader("\\\\\\\\u21aF").read(bufferArray, 0, 9);
 		assertThat(c, is(equalTo(9)));
 		int i = 0;
@@ -1008,8 +913,7 @@ public class Native2ASCIIEncodingTest
 	}
 
 	@Test
-	public void read_CharBuffer_ShouldIgnoreEscapeSequenceThatFollowsThreeBackslashes() throws IOException
-	{
+	public void read_CharBuffer_ShouldIgnoreEscapeSequenceThatFollowsThreeBackslashes() throws IOException {
 		String input = "\\\\\\\\u21aF";
 		Reader reader = getReader(input);
 		int c = reader.read(buffer);
@@ -1020,8 +924,7 @@ public class Native2ASCIIEncodingTest
 	}
 
 	@Test
-	public void readShouldIgnoreIncompleteEscapeSequenceThatFollowsOneBackslash() throws IOException
-	{
+	public void readShouldIgnoreIncompleteEscapeSequenceThatFollowsOneBackslash() throws IOException {
 		Reader reader = getReader("\\\\u21a");
 		int c = reader.read();
 		assertThat((char) c, is(equalTo('\\')));
@@ -1040,8 +943,7 @@ public class Native2ASCIIEncodingTest
 	}
 
 	@Test
-	public void read_charArray_ShouldIgnoreIncompleteEscapeSequenceThatFollowsOneBackslash() throws IOException
-	{
+	public void read_charArray_ShouldIgnoreIncompleteEscapeSequenceThatFollowsOneBackslash() throws IOException {
 		int c = getReader("\\\\u21a").read(bufferArray);
 		assertThat(c, is(equalTo(6)));
 		int i = 0;
@@ -1055,8 +957,7 @@ public class Native2ASCIIEncodingTest
 
 	@Test
 	public void read_charArray_int_int_ShouldIgnoreIncompleteEscapeSequenceThatFollowsOneBackslash()
-		throws IOException
-	{
+			throws IOException {
 		int c = getReader("\\\\u21a").read(bufferArray, 0, 6);
 		assertThat(c, is(equalTo(6)));
 		int i = 0;
@@ -1069,8 +970,7 @@ public class Native2ASCIIEncodingTest
 	}
 
 	@Test
-	public void read_CharBuffer_ShouldIgnoreIncompleteEscapeSequenceThatFollowsOneBackslash() throws IOException
-	{
+	public void read_CharBuffer_ShouldIgnoreIncompleteEscapeSequenceThatFollowsOneBackslash() throws IOException {
 		String input = "\\\\u21a";
 		Reader reader = getReader(input);
 		int c = reader.read(buffer);
@@ -1081,8 +981,7 @@ public class Native2ASCIIEncodingTest
 	}
 
 	@Test
-	public void readShouldIgnoreMalformedEscapeSequenceThatFollowsOneBackslash() throws IOException
-	{
+	public void readShouldIgnoreMalformedEscapeSequenceThatFollowsOneBackslash() throws IOException {
 		Reader reader = getReader("asdf\\: \\\\u21alasdf");
 		int c = reader.read();
 		assertThat((char) c, is(equalTo('a')));
@@ -1125,8 +1024,7 @@ public class Native2ASCIIEncodingTest
 	}
 
 	@Test
-	public void read_charArray_ShouldIgnoreMalformedEscapeSequenceThatFollowsOneBackslash() throws IOException
-	{
+	public void read_charArray_ShouldIgnoreMalformedEscapeSequenceThatFollowsOneBackslash() throws IOException {
 		int c = getReader("asdf\\: \\\\u21alasdf").read(bufferArray);
 		assertThat(c, is(equalTo(18)));
 		int i = 0;
@@ -1151,9 +1049,7 @@ public class Native2ASCIIEncodingTest
 	}
 
 	@Test
-	public void read_charArray_int_int_ShouldIgnoreMalformedEscapeSequenceThatFollowsOneBackslash()
-		throws IOException
-	{
+	public void read_charArray_int_int_ShouldIgnoreMalformedEscapeSequenceThatFollowsOneBackslash() throws IOException {
 		int c = getReader("asdf\\: \\\\u21alasdf").read(bufferArray, 0, 18);
 		assertThat(c, is(equalTo(18)));
 		int i = 0;
@@ -1178,8 +1074,7 @@ public class Native2ASCIIEncodingTest
 	}
 
 	@Test
-	public void read_CharBuffer_ShouldIgnoreMalformedEscapeSequenceThatFollowsOneBackslash() throws IOException
-	{
+	public void read_CharBuffer_ShouldIgnoreMalformedEscapeSequenceThatFollowsOneBackslash() throws IOException {
 		String input = "asdf\\: \\\\u21alasdf";
 		Reader reader = getReader(input);
 		int c = reader.read(buffer);
@@ -1190,8 +1085,7 @@ public class Native2ASCIIEncodingTest
 	}
 
 	@Test
-	public void differentReadMethodsShouldHaveACommonEscapeSequenceHandling() throws IOException
-	{
+	public void differentReadMethodsShouldHaveACommonEscapeSequenceHandling() throws IOException {
 		Reader reader = getReader("asdf\\: \\\\u21aFasdf");
 		int c = reader.read(bufferArray, 0, 8);
 		assertThat(c, is(equalTo(8)));
@@ -1224,14 +1118,12 @@ public class Native2ASCIIEncodingTest
 	}
 
 	@Test(expected = IllegalArgumentException.class)
-	public void skipShouldThrowExceptionIfToSkipIsNegative() throws IOException
-	{
+	public void skipShouldThrowExceptionIfToSkipIsNegative() throws IOException {
 		getReader("asdf\\: \\\\u21alasdf").skip(-1);
 	}
 
 	@Test
-	public void skipShouldNotDoAnythingIfToSkipIsZero() throws IOException
-	{
+	public void skipShouldNotDoAnythingIfToSkipIsZero() throws IOException {
 		String input = "asdf\\: \\\\u21alasdf";
 		Reader reader = getReader(input);
 		long skipped = reader.skip(0);
@@ -1245,8 +1137,7 @@ public class Native2ASCIIEncodingTest
 	}
 
 	@Test
-	public void skipShouldSkipGivenAmountIfAvailable() throws IOException
-	{
+	public void skipShouldSkipGivenAmountIfAvailable() throws IOException {
 		Reader reader = getReader("asdf\\: \\\\u21alasdf");
 		long skipped = reader.skip(8);
 		assertThat(skipped, is(equalTo(8L)));
@@ -1259,8 +1150,7 @@ public class Native2ASCIIEncodingTest
 	}
 
 	@Test
-	public void skipShouldSkipAllIfToSkipIsGreaterThanInputLength() throws IOException
-	{
+	public void skipShouldSkipAllIfToSkipIsGreaterThanInputLength() throws IOException {
 		Reader reader = getReader("asdf\\: \\\\u21alasdf");
 		long skipped = reader.skip(20);
 		assertThat(skipped, is(equalTo(18L)));
@@ -1270,8 +1160,7 @@ public class Native2ASCIIEncodingTest
 	}
 
 	@Test
-	public void multipleSkipCallsShouldWork() throws IOException
-	{
+	public void multipleSkipCallsShouldWork() throws IOException {
 		Reader reader = getReader("asdf\\: \\\\u21alasdf");
 		long skipped = reader.skip(5);
 		assertThat(skipped, is(equalTo(5L)));
@@ -1285,10 +1174,8 @@ public class Native2ASCIIEncodingTest
 	}
 
 	@Test
-	public void textReaderWithNullAsClassParameterShouldWork()
-		throws IOException, InvocationTargetException, NoSuchMethodException, IllegalAccessException,
-		       InstantiationException
-	{
+	public void textReaderWithNullAsClassParameterShouldWork() throws IOException, InvocationTargetException,
+			NoSuchMethodException, IllegalAccessException, InstantiationException {
 		InputStream inputStream = new ByteArrayInputStream("asdf\\: \\\\u21alasdf".getBytes(iso_8859_1));
 		reader = native2ASCIIEncoding.getTextReader(inputStream, null);
 		long skipped = reader.skip(18);
@@ -1299,8 +1186,7 @@ public class Native2ASCIIEncodingTest
 	}
 
 	@Test
-	public void readerShouldBeAbleToDecodeWhatWriterHasEncoded() throws IOException
-	{
+	public void readerShouldBeAbleToDecodeWhatWriterHasEncoded() throws IOException {
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		writer = native2ASCIIEncoding.getTextWriter(baos);
 		writer.write('\u21AF');
@@ -1315,8 +1201,7 @@ public class Native2ASCIIEncodingTest
 	}
 
 	@Test
-	public void readerShouldReadSingleCharactersIfWriterAddedAnEscapingBackslash() throws IOException
-	{
+	public void readerShouldReadSingleCharactersIfWriterAddedAnEscapingBackslash() throws IOException {
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		writer = native2ASCIIEncoding.getTextWriter(baos);
 		writer.write('\\');
@@ -1344,8 +1229,7 @@ public class Native2ASCIIEncodingTest
 	}
 
 	@Test
-	public void readerShouldDecodeIfWriterHasWrittenEscapeSequenceAsSingleCharacters() throws IOException
-	{
+	public void readerShouldDecodeIfWriterHasWrittenEscapeSequenceAsSingleCharacters() throws IOException {
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		writer = native2ASCIIEncoding.getTextWriter(baos);
 		writer.write('\\');
@@ -1365,8 +1249,7 @@ public class Native2ASCIIEncodingTest
 	}
 
 	@Test
-	public void write_int_ShouldEncodeASCIICharactersCorrectly() throws IOException
-	{
+	public void write_int_ShouldEncodeASCIICharactersCorrectly() throws IOException {
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		writer = native2ASCIIEncoding.getTextWriter(baos);
 		writer.write('\\');
@@ -1380,8 +1263,7 @@ public class Native2ASCIIEncodingTest
 	}
 
 	@Test
-	public void write_charArray_int_int_ShouldEncodeASCIICharactersCorrectly() throws IOException
-	{
+	public void write_charArray_int_int_ShouldEncodeASCIICharactersCorrectly() throws IOException {
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		writer = native2ASCIIEncoding.getTextWriter(baos);
 		writer.write(new char[] { '\\', 'u', '2', '1', 'a', 'F' }, 0, 6);
@@ -1390,8 +1272,7 @@ public class Native2ASCIIEncodingTest
 	}
 
 	@Test
-	public void write_String_int_int_ShouldEncodeASCIICharactersCorrectly() throws IOException
-	{
+	public void write_String_int_int_ShouldEncodeASCIICharactersCorrectly() throws IOException {
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		writer = native2ASCIIEncoding.getTextWriter(baos);
 		writer.write("\\u21aF", 0, 6);
@@ -1400,8 +1281,7 @@ public class Native2ASCIIEncodingTest
 	}
 
 	@Test
-	public void write_charArray_ShouldEncodeASCIICharactersCorrectly() throws IOException
-	{
+	public void write_charArray_ShouldEncodeASCIICharactersCorrectly() throws IOException {
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		writer = native2ASCIIEncoding.getTextWriter(baos);
 		writer.write(new char[] { '\\', 'u', '2', '1', 'a', 'F' });
@@ -1410,8 +1290,7 @@ public class Native2ASCIIEncodingTest
 	}
 
 	@Test
-	public void write_String_ShouldEncodeASCIICharactersCorrectly() throws IOException
-	{
+	public void write_String_ShouldEncodeASCIICharactersCorrectly() throws IOException {
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		writer = native2ASCIIEncoding.getTextWriter(baos);
 		writer.write("\\u21aF");
@@ -1420,8 +1299,7 @@ public class Native2ASCIIEncodingTest
 	}
 
 	@Test
-	public void append_char_ShouldEncodeASCIICharactersCorrectly() throws IOException
-	{
+	public void append_char_ShouldEncodeASCIICharactersCorrectly() throws IOException {
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		writer = native2ASCIIEncoding.getTextWriter(baos);
 		Writer returnedWriter = writer.append('\\').append('u').append('2').append('1').append('a').append('F');
@@ -1431,8 +1309,7 @@ public class Native2ASCIIEncodingTest
 	}
 
 	@Test
-	public void append_CharSequence_int_int_ShouldEncodeASCIICharactersCorrectly() throws IOException
-	{
+	public void append_CharSequence_int_int_ShouldEncodeASCIICharactersCorrectly() throws IOException {
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		writer = native2ASCIIEncoding.getTextWriter(baos);
 		Writer returnedWriter = writer.append("\\u21aF", 0, 6);
@@ -1442,8 +1319,7 @@ public class Native2ASCIIEncodingTest
 	}
 
 	@Test
-	public void append_CharSequence_ShouldEncodeASCIICharactersCorrectly() throws IOException
-	{
+	public void append_CharSequence_ShouldEncodeASCIICharactersCorrectly() throws IOException {
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		writer = native2ASCIIEncoding.getTextWriter(baos);
 		Writer returnedWriter = writer.append("\\u21aF");
@@ -1453,8 +1329,7 @@ public class Native2ASCIIEncodingTest
 	}
 
 	@Test
-	public void write_int_ShouldEncodeNonASCIICharactersCorrectly() throws IOException
-	{
+	public void write_int_ShouldEncodeNonASCIICharactersCorrectly() throws IOException {
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		writer = native2ASCIIEncoding.getTextWriter(baos);
 		writer.write('\u21AF');
@@ -1463,8 +1338,7 @@ public class Native2ASCIIEncodingTest
 	}
 
 	@Test
-	public void write_charArray_int_int_ShouldEncodeNonASCIICharactersCorrectly() throws IOException
-	{
+	public void write_charArray_int_int_ShouldEncodeNonASCIICharactersCorrectly() throws IOException {
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		writer = native2ASCIIEncoding.getTextWriter(baos);
 		writer.write(new char[] { '\u21AF' }, 0, 1);
@@ -1473,8 +1347,7 @@ public class Native2ASCIIEncodingTest
 	}
 
 	@Test
-	public void write_String_int_int_ShouldEncodeNonASCIICharactersCorrectly() throws IOException
-	{
+	public void write_String_int_int_ShouldEncodeNonASCIICharactersCorrectly() throws IOException {
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		writer = native2ASCIIEncoding.getTextWriter(baos);
 		writer.write("\u21AF", 0, 1);
@@ -1483,8 +1356,7 @@ public class Native2ASCIIEncodingTest
 	}
 
 	@Test
-	public void write_charArray_ShouldEncodeNonASCIICharactersCorrectly() throws IOException
-	{
+	public void write_charArray_ShouldEncodeNonASCIICharactersCorrectly() throws IOException {
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		writer = native2ASCIIEncoding.getTextWriter(baos);
 		writer.write(new char[] { '\u21AF' });
@@ -1493,8 +1365,7 @@ public class Native2ASCIIEncodingTest
 	}
 
 	@Test
-	public void write_String_ShouldEncodeNonASCIICharactersCorrectly() throws IOException
-	{
+	public void write_String_ShouldEncodeNonASCIICharactersCorrectly() throws IOException {
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		writer = native2ASCIIEncoding.getTextWriter(baos);
 		writer.write("\u21AF");
@@ -1503,8 +1374,7 @@ public class Native2ASCIIEncodingTest
 	}
 
 	@Test
-	public void append_char_ShouldEncodeNonASCIICharactersCorrectly() throws IOException
-	{
+	public void append_char_ShouldEncodeNonASCIICharactersCorrectly() throws IOException {
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		writer = native2ASCIIEncoding.getTextWriter(baos);
 		Writer returnedWriter = writer.append('\u21AF');
@@ -1514,8 +1384,7 @@ public class Native2ASCIIEncodingTest
 	}
 
 	@Test
-	public void append_CharSequence_int_int_ShouldEncodeNonASCIICharactersCorrectly() throws IOException
-	{
+	public void append_CharSequence_int_int_ShouldEncodeNonASCIICharactersCorrectly() throws IOException {
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		writer = native2ASCIIEncoding.getTextWriter(baos);
 		Writer returnedWriter = writer.append("\u21AF", 0, 1);
@@ -1525,8 +1394,7 @@ public class Native2ASCIIEncodingTest
 	}
 
 	@Test
-	public void append_CharSequence_ShouldEncodeNonASCIICharactersCorrectly() throws IOException
-	{
+	public void append_CharSequence_ShouldEncodeNonASCIICharactersCorrectly() throws IOException {
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		writer = native2ASCIIEncoding.getTextWriter(baos);
 		Writer returnedWriter = writer.append("\u21AF");
@@ -1536,8 +1404,7 @@ public class Native2ASCIIEncodingTest
 	}
 
 	@Test
-	public void append_CharSequence_int_int_ShouldEncodeNullCorrectly() throws IOException
-	{
+	public void append_CharSequence_int_int_ShouldEncodeNullCorrectly() throws IOException {
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		writer = native2ASCIIEncoding.getTextWriter(baos);
 		Writer returnedWriter = writer.append(null, 0, 4);
@@ -1547,8 +1414,7 @@ public class Native2ASCIIEncodingTest
 	}
 
 	@Test
-	public void append_CharSequence_ShouldEncodeNullCorrectly() throws IOException
-	{
+	public void append_CharSequence_ShouldEncodeNullCorrectly() throws IOException {
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		writer = native2ASCIIEncoding.getTextWriter(baos);
 		Writer returnedWriter = writer.append(null);
@@ -1565,30 +1431,23 @@ public class Native2ASCIIEncodingTest
 	private static char[] bufferArray;
 	private static CharBuffer buffer;
 
-	private static class ThrottledPushbackReader extends PushbackReader
-	{
-		public ThrottledPushbackReader(Reader in, int size)
-		{
+	private static class ThrottledPushbackReader extends PushbackReader {
+		public ThrottledPushbackReader(Reader in, int size) {
 			super(in, size);
 		}
 
 		@Override
-		public int read(char[] cbuf, int off, int len) throws IOException
-		{
-			if (cbuf == null)
-			{
+		public int read(char[] cbuf, int off, int len) throws IOException {
+			if (cbuf == null) {
 				throw new NullPointerException();
-			} else if (off < 0 || len < 0 || len > cbuf.length - off)
-			{
+			} else if (off < 0 || len < 0 || len > cbuf.length - off) {
 				throw new IndexOutOfBoundsException();
 			}
 			int readChar = read();
-			if (readChar == -1)
-			{
+			if (readChar == -1) {
 				return -1;
 			}
-			if (len == 0)
-			{
+			if (len == 0) {
 				return 0;
 			}
 			cbuf[off] = (char) readChar;
