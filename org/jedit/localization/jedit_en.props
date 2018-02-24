@@ -2016,6 +2016,7 @@ vfs.browser.filter=Filter:
 vfs.browser.tree.loading=Loading...
 
 vfs.browser.name=Name
+vfs.browser.path=Path
 vfs.browser.type=Type
 vfs.browser.type.file=File
 vfs.browser.type.directory=Directory

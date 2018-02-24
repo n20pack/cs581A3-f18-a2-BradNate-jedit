@@ -236,7 +236,7 @@ public class FavoritesVFS extends VFS
 		Favorite(String path, int type)
 		{
 			super(path,path,PROTOCOL + ':' + path,type, 0L,false);
-			this.label = MiscUtilities.abbreviateView(path);
+			this.label = MiscUtilities.getFileName(path);
 		}
 
 		public String getLabel()

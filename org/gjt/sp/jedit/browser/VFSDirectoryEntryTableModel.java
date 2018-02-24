@@ -166,7 +166,7 @@ public class VFSDirectoryEntryTableModel extends AbstractTableModel
 	//{{{ getColumnCount() method
 	public int getColumnCount()
 	{
-		return 1 + extAttrs.size();
+		return 2 + extAttrs.size();
 	} //}}}
 
 	//{{{ getRowCount() method
@@ -183,6 +183,8 @@ public class VFSDirectoryEntryTableModel extends AbstractTableModel
 	{
 		if(col == 0)
 			return jEdit.getProperty("vfs.browser.name");
+		else if(col == 1)
+			return jEdit.getProperty("vfs.browser.path");
 		else
 			return jEdit.getProperty("vfs.browser." + getExtendedAttribute(col));
 	} //}}}
@@ -217,7 +219,12 @@ public class VFSDirectoryEntryTableModel extends AbstractTableModel
 	//{{{ getSortAttribute() method
 	public String getSortAttribute(int column)
 	{
-		return column == 0 ? "name" : getExtendedAttribute(column);
+		if(column == 0)
+			return "name";
+		else if(column == 1)
+			return "path";
+		else
+			return getExtendedAttribute(column);
 	} //}}}
 
 	//{{{ sortByColumn() method
@@ -243,7 +250,7 @@ public class VFSDirectoryEntryTableModel extends AbstractTableModel
 	//{{{ getExtendedAttribute() method
 	public String getExtendedAttribute(int index)
 	{
-		return extAttrs.get(index - 1).name;
+		return extAttrs.get(index - 2).name;
 	} //}}}
 
 	//{{{ getColumnWidth() method

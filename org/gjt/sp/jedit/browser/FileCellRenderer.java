@@ -114,6 +114,17 @@ public class FileCellRenderer extends DefaultTableCellRenderer
 				setBorder(new ExpansionToggleBorder(
 					state,entry.level));
 			}
+			else if (column == 1)
+			{
+				String path;
+				if(file.getSymlinkPath() == null)
+					path = file.getPath();
+				else
+					path = file.getSymlinkPath();
+				
+				setText(MiscUtilities.getParentOfPath(path));
+				setIcon(null);
+			}
 			else
 			{
 				VFSDirectoryEntryTableModel model = (VFSDirectoryEntryTableModel)table.getModel();
@@ -218,6 +229,32 @@ public class FileCellRenderer extends DefaultTableCellRenderer
 		}
 		return width;
 	} //}}}
+	
+	int getNameWidth(VFSDirectoryEntryTableModel.Entry entry,
+			Font font, FontRenderContext fontRenderContext)
+	{
+		String name = MiscUtilities.getFileName((entry.dirEntry.getName()));
+		int width = (int)font.getStringBounds(name,fontRenderContext)
+			.getWidth();
+		width += ExpansionToggleBorder.ICON_WIDTH
+			+ entry.level * ExpansionToggleBorder.LEVEL_WIDTH
+			+ 3;
+		if(showIcons)
+		{
+			width += fileIcon.getIconWidth();
+			width += getIconTextGap();
+		}
+		return width;
+	}
+	
+	int getPathWidth(VFSDirectoryEntryTableModel.Entry entry,
+			Font font, FontRenderContext fontRenderContext)
+	{
+		String path = MiscUtilities.getParentOfPath(entry.dirEntry.getPath());
+		int width = (int)font.getStringBounds(path,fontRenderContext)
+			.getWidth();
+		return width;
+	}
 
 	//}}}
 

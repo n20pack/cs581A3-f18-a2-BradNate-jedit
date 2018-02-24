@@ -508,7 +508,7 @@ public class VFSDirectoryEntryTable extends JTable
 			}
 		}
 
-		for(int i = 1; i < widths.length; i++)
+		for(int i = 2; i < widths.length; i++)
 		{
 			//String extAttr = model.getExtendedAttribute(i);
 			widths[i] = Math.max(widths[i],model.getColumnWidth(i));
@@ -521,11 +521,14 @@ public class VFSDirectoryEntryTable extends JTable
 				== VFSFile.FILE
 				? renderer.plainFont : renderer.boldFont;
 
-			widths[0] = Math.max(widths[0],renderer.getEntryWidth(
+			widths[0] = Math.max(widths[0],renderer.getNameWidth(
 				entry,font,fontRenderContext));
+			widths[1] = Math.max(widths[1],renderer.getPathWidth(
+					entry,renderer.plainFont,fontRenderContext));
 		}
 
 		widths[0] += 10;
+		widths[1] += 10;
 
 		TableColumnModel columns = getColumnModel();
 
@@ -555,7 +558,7 @@ public class VFSDirectoryEntryTable extends JTable
 		VFSDirectoryEntryTableModel model = (VFSDirectoryEntryTableModel)getModel();
 		TableColumnModel columns = getColumnModel();
 
-		for(int i = 1; i < model.getColumnCount(); i++)
+		for(int i = 2; i < model.getColumnCount(); i++)
 			model.setColumnWidth(i,columns.getColumn(i).getWidth());
 	} //}}}
 
