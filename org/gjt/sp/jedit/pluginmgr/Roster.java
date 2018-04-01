@@ -44,12 +44,14 @@ import static org.gjt.sp.jedit.io.FileVFS.recursiveDelete;
  */
 class Roster
 {
+	private RosterOperations rosterOperations = new RosterOperations();
+
 	private static final Pattern HOST_REGEX = Pattern.compile("(?<=/)\\w++(?=\\.dl\\.sourceforge\\.net)");
 
 	//{{{ Roster constructor
 	Roster()
 	{
-		operations = new ArrayList<Operation>();
+		rosterOperations.setOperations(new ArrayList<Operation>());
 		toLoad = new ArrayList<String>();
 	} //}}}
 
@@ -60,14 +62,14 @@ class Roster
 	 */
 	void addRemove(String jar)
 	{
-		addOperation(new Remove(jar));
+		rosterOperations.addOperation(new Remove(jar));
 	} //}}}
 
 	//{{{ addInstall() method
 	void addInstall(String installed, String url, String installDirectory,
 		int size)
 	{
-		addOperation(new Install(installed,url,installDirectory,size));
+		rosterOperations.addOperation(new Install(installed,url,installDirectory,size));
 	} //}}}
 
 	//{{{ addLoad() method
@@ -79,38 +81,31 @@ class Roster
 	//{{{ getOperation() method
 	public Operation getOperation(int i)
 	{
-		return operations.get(i);
+		return rosterOperations.getOperation(i);
 	} //}}}
 
 	//{{{ getOperationCount() method
 	int getOperationCount()
 	{
-		return operations.size();
+		return rosterOperations.getOperationCount();
 	} //}}}
 
 	//{{{ isEmpty() method
 	boolean isEmpty()
 	{
-		return operations.isEmpty();
+		return rosterOperations.isEmpty();
 	} //}}}
 
 	//{{{ performOperationsInWorkThread() method
 	void performOperationsInWorkThread(PluginManagerProgress progress)
 	{
-		for (Operation op : operations)
-		{
-			op.runInWorkThread(progress);
-			progress.done();
-
-			if (Thread.interrupted())
-				return;
-		}
+		rosterOperations.performOperationsInWorkThread(progress);
 	} //}}}
 
 	//{{{ performOperationsInAWTThread() method
 	void performOperationsInAWTThread(Component comp)
 	{
-		for (Operation op : operations)
+		for (Operation op : rosterOperations.getOperations())
 			op.runInAWTThread(comp);
 
 		// add the JARs before checking deps since dep check might
@@ -142,20 +137,7 @@ class Roster
 	//{{{ Private members
 	private static File downloadDir;
 
-	private List<Operation> operations;
 	private List<String> toLoad;
-
-	//{{{ addOperation() method
-	private void addOperation(Operation op)
-	{
-		for (Operation operation : operations)
-		{
-			if (operation.equals(op))
-				return;
-		}
-
-		operations.add(op);
-	} //}}}
 
 	//{{{ getDownloadDir() method
 	private static String getDownloadDir()
