@@ -57,6 +57,7 @@ import org.gjt.sp.jedit.input.TextAreaInputHandler;
 import org.gjt.sp.jedit.syntax.Chunk;
 import org.gjt.sp.jedit.syntax.DefaultTokenHandler;
 import org.gjt.sp.jedit.syntax.Token;
+import org.gjt.sp.jedit.textarea.StructureMatcher.Match;
 import org.gjt.sp.util.GenericGUIUtilities;
 import org.gjt.sp.util.Log;
 import org.gjt.sp.util.StandardUtilities;
@@ -6742,6 +6743,53 @@ loop:		for(int i = lineNo - 1; i >= 0; i--)
 		else
 		{
 			return painter;
+		}
+	}
+
+	public int[] getOffsets(int screenLine, Match match) {
+		int x1, x2;
+		int matchStartLine = getScreenLineOfOffset(match.start);
+		int matchEndLine = getScreenLineOfOffset(match.end);
+		if (matchStartLine == screenLine) {
+			x1 = match.start;
+		} else {
+			x1 = getScreenLineStartOffset(screenLine);
+		}
+		if (matchEndLine == screenLine) {
+			x2 = match.end;
+		} else {
+			x2 = getScreenLineEndOffset(screenLine) - 1;
+		}
+		return new int[] { offsetToXY(x1).x, offsetToXY(x2).x };
+	}
+
+	public void paintHighlight(Graphics gfx, int screenLine, int start, int end, int y, Match match) {
+		if (!isStructureHighlightVisible())
+			return;
+		if (match.start >= end || match.end < start) {
+			return;
+		}
+		int matchStartLine = getScreenLineOfOffset(match.start);
+		int matchEndLine = getScreenLineOfOffset(match.end);
+		int height = Math.min(getPainter().getLineHeight(), getPainter().getFontHeight());
+		y += Math.max(getPainter().getLineExtraSpacing(), 0);
+		int[] offsets = getOffsets(screenLine, match);
+		int x1 = offsets[0];
+		int x2 = offsets[1];
+		gfx.setColor(getPainter().getStructureHighlightColor());
+		gfx.drawLine(x1, y, x1, y + height - 1);
+		gfx.drawLine(x2, y, x2, y + height - 1);
+		if (matchStartLine == screenLine || screenLine == 0)
+			gfx.drawLine(x1, y, x2, y);
+		else {
+			offsets = getOffsets(screenLine - 1, match);
+			int prevX1 = offsets[0];
+			int prevX2 = offsets[1];
+			gfx.drawLine(Math.min(x1, prevX1), y, Math.max(x1, prevX1), y);
+			gfx.drawLine(Math.min(x2, prevX2), y, Math.max(x2, prevX2), y);
+		}
+		if (matchEndLine == screenLine) {
+			gfx.drawLine(x1, y + height - 1, x2, y + height - 1);
 		}
 	}
 }
