@@ -137,14 +137,14 @@ public class PanelWindowContainer implements DockableWindowContainer, DockingAre
 		dockables.add(entry);
 
 		//{{{ Create button
-		int rotation;
+		RotationType rotation;
 		if(position.equals(DockableWindowManagerImpl.TOP)
 			|| position.equals(DockableWindowManagerImpl.BOTTOM))
-			rotation = RotatedTextIcon.NONE;
+			rotation = RotationType.newRotation(RotationType.NONE);
 		else if(position.equals(DockableWindowManagerImpl.LEFT))
-			rotation = RotatedTextIcon.CCW;
+			rotation = RotationType.newRotation(RotationType.CCW);
 		else if(position.equals(DockableWindowManagerImpl.RIGHT))
-			rotation = RotatedTextIcon.CW;
+			rotation = RotationType.newRotation(RotationType.CW);
 		else
 			throw new InternalError("Invalid position: " + position);
 
@@ -639,12 +639,9 @@ public class PanelWindowContainer implements DockableWindowContainer, DockingAre
 	//{{{ RotatedTextIcon class
 	public static class RotatedTextIcon implements Icon
 	{
-		public static final int NONE = 0;
-		public static final int CW = 1;
-		public static final int CCW = 2;
 
 		//{{{ RotatedTextIcon constructor
-		public RotatedTextIcon(int rotate, Font font, String text)
+		public RotatedTextIcon(RotationType rotate, Font font, String text)
 		{
 			this.rotate = rotate;
 			this.font = font;
@@ -671,16 +668,16 @@ public class PanelWindowContainer implements DockableWindowContainer, DockingAre
 		//{{{ getIconWidth() method
 		public int getIconWidth()
 		{
-			return (int)(rotate == RotatedTextIcon.CW
-				|| rotate == RotatedTextIcon.CCW
+			return (int)(rotate.getRotationDirection() == RotationType.CW
+				|| rotate.getRotationDirection() == RotationType.CCW
 				? height : width);
 		} //}}}
 
 		//{{{ getIconHeight() method
 		public int getIconHeight()
 		{
-			return (int)(rotate == RotatedTextIcon.CW
-				|| rotate == RotatedTextIcon.CCW
+			return (int)(rotate.getRotationDirection() == RotationType.CW
+				|| rotate.getRotationDirection() == RotationType.CCW
 				? width : height);
 		} //}}}
 
@@ -695,13 +692,14 @@ public class PanelWindowContainer implements DockableWindowContainer, DockingAre
 			g2d.setRenderingHints(renderHints);
 			g2d.setColor(c.getForeground());
 
+			rotate.rotate(g2d, oldTransform, x, y, height, width, ascent, glyphs);
 			//{{{ No rotation
-			if(rotate == RotatedTextIcon.NONE)
+			/*if(rotate.getRotationDirection() == RotationType.NONE)
 			{
 				g2d.drawGlyphVector(glyphs,x + 2,y + ascent);
 			} //}}}
 			//{{{ Clockwise rotation
-			else if(rotate == RotatedTextIcon.CW)
+			else if(rotate.getRotationDirection() == RotationType.CW)
 			{
 				AffineTransform trans = new AffineTransform();
 				trans.concatenate(oldTransform);
@@ -714,7 +712,7 @@ public class PanelWindowContainer implements DockableWindowContainer, DockingAre
 					+ ascent);
 			} //}}}
 			//{{{ Counterclockwise rotation
-			else if(rotate == RotatedTextIcon.CCW)
+			else if(rotate.getRotationDirection() == RotationType.CCW)
 			{
 				AffineTransform trans = new AffineTransform();
 				trans.concatenate(oldTransform);
@@ -725,14 +723,14 @@ public class PanelWindowContainer implements DockableWindowContainer, DockingAre
 				g2d.drawGlyphVector(glyphs,(height - width) / 2,
 					(width - height) / 2
 					+ ascent);
-			} //}}}
+			} //}}}*/
 
 			g2d.setTransform(oldTransform);
 			g2d.setRenderingHints(oldHints);
 		} //}}}
 
 		//{{{ Private members
-		private final int rotate;
+		private final RotationType rotate;
 		private final Font font;
 		private final GlyphVector glyphs;
 		private final float width;
