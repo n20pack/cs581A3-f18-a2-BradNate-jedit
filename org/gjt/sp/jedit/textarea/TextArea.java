@@ -43,6 +43,7 @@ import javax.swing.plaf.LayerUI;
 import javax.swing.text.Segment;
 import javax.swing.text.TabExpander;
 
+import org.gjt.sp.jedit.Buffer;
 import org.gjt.sp.jedit.Debug;
 import org.gjt.sp.jedit.IPropertyManager;
 import org.gjt.sp.jedit.JEditActionContext;
@@ -2135,6 +2136,27 @@ forward_scan:	do
 	//}}}
 
 	//{{{ Caret
+	
+	
+	public void addMarker(Buffer buffer) {
+		int caretLine = getCaretLine();
+
+		// always add markers on selected lines
+		Selection[] selection = getSelection();
+		for (Selection s : selection)
+		{
+			int startLine = s.getStartLine();
+			if (startLine != s.getEndLine() && startLine != caretLine)
+			{
+				buffer.addMarker('\0', s.getStart());
+			}
+
+			if (s.getEndLine() != caretLine) buffer.addMarker('\0', s.getEnd());
+		}
+
+		// toggle marker on caret line
+		buffer.addOrRemoveMarker('\0',getCaretPosition());
+	}
 
 	//{{{ caretAutoScroll() method
 	/**
@@ -6792,4 +6814,6 @@ loop:		for(int i = lineNo - 1; i >= 0; i--)
 			gfx.drawLine(x1, y + height - 1, x2, y + height - 1);
 		}
 	}
+	
+	
 }
